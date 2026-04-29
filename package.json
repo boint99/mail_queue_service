@@ -1,0 +1,21 @@
+{
+  "name": "mail_queue_service",
+  "version": "1.0.0",
+  "main": "src/app.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "nodemon --watch src/app.js",
+    "worker": "nodemon --watch src/worker.js"
+  },
+  "dependencies": {
+    "amqplib": "^1.0.3",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "ioredis": "^5.10.1",
+    "nodemailer": "^8.0.7",
+    "uuid": "^14.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

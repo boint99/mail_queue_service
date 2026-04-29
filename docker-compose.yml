@@ -1,0 +1,130 @@
+version: "3.8"
+
+services:
+  # ========================
+  # RabbitMQ - Message Broker
+  # ========================
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: mail_queue_rabbitmq
+    restart: always
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672" # AMQP protocol
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-admin123}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mail_queue_network
+
+  # ========================
+  # Redis - Cache & Rate Limiting
+  # ========================
+  redis:
+    image: redis:7-alpine
+    container_name: mail_queue_redis
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --requirepass ${REDIS_PASS:-redis123} --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASS:-redis123}", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mail_queue_network
+  # ========================
+  # Mail Queue API Server
+  # ========================
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: mail_queue_api
+  #   restart: always
+  #   ports:
+  #     - "${API_PORT:-3000}:3000"
+  #   environment:
+  #     NODE_ENV: ${NODE_ENV:-development}
+  #     PORT: 3000
+  #     # RabbitMQ
+  #     RABBITMQ_HOST: rabbitmq
+  #     RABBITMQ_USER: ${RABBITMQ_USER:-admin}
+  #     RABBITMQ_PASS: ${RABBITMQ_PASS:-admin123}
+  #     RABBITMQ_PORT: 5672
+  #     RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
+  #     # Redis
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     REDIS_PASS: ${REDIS_PASS:-redis123}
+  #     # SMTP
+  #     SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+  #     SMTP_PORT: ${SMTP_PORT:-587}
+  #     SMTP_USER: ${SMTP_USER}
+  #     SMTP_PASS: ${SMTP_PASS}
+  #     SMTP_FROM: ${SMTP_FROM:-noreply@example.com}
+  #   command: [ "node", "src/server.js" ]
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - mail_queue_network
+
+  # # ========================
+  # # Mail Queue Worker (Consumer)
+  # # ========================
+  # worker:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: mail_queue_worker
+  #   restart: always
+  #   environment:
+  #     NODE_ENV: ${NODE_ENV:-development}
+  #     # RabbitMQ
+  #     RABBITMQ_HOST: rabbitmq
+  #     RABBITMQ_USER: ${RABBITMQ_USER:-admin}
+  #     RABBITMQ_PASS: ${RABBITMQ_PASS:-admin123}
+  #     RABBITMQ_PORT: 5672
+  #     RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
+  #     # Redis
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     REDIS_PASS: ${REDIS_PASS:-redis123}
+  #     # SMTP
+  #     SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+  #     SMTP_PORT: ${SMTP_PORT:-587}
+  #     SMTP_USER: ${SMTP_USER}
+  #     SMTP_PASS: ${SMTP_PASS}
+  #     SMTP_FROM: ${SMTP_FROM:-noreply@example.com}
+  #   command: [ "node", "src/worker.js" ]
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - mail_queue_network
+
+volumes:
+  rabbitmq_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  mail_queue_network:
+    driver: bridge
