@@ -2,14 +2,13 @@ const { v7 } = require('uuid')
 const emailModel = require('../model/email.model')
 
 class emailService {
-
-  static async listEmails() {
-    console.log('>>> listEmails')
+  static async emailList() {
+    return await emailModel.emailList()
   }
 
   static async insertEmail(data) {
     const { email, name, status } = data
-    console.log('>>> insertEmail', email, name, status)
+
     if (!email || !name) {
       throw new Error('Missing required fields!')
     }

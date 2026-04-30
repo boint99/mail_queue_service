@@ -10,7 +10,6 @@ async function connectRabbitMQ(retries = 5, delay = 5000) {
     try {
       connection = await amqp.connect(envConfig.RABBITMQ_URL)
       channel = await connection.createChannel()
-      console.log('🚀 ~ connectRabbitMQ ~ channel:', channel)
 
       // auto setup queue & exchange
       await setupQueues(channel)
@@ -37,7 +36,7 @@ async function connectRabbitMQ(retries = 5, delay = 5000) {
 }
 
 async function setupQueues(ch) {
-  // create exchange main
+  // create exchange
   await ch.assertExchange(queueConfig.EXCHANGE_NAME, queueConfig.EXCHANGE_TYPE, {
     durable: true
   })
@@ -57,8 +56,6 @@ async function setupQueues(ch) {
     }
   })
   await ch.bindQueue(queueConfig.QUEUE_SEND_MAIL, queueConfig.EXCHANGE_NAME, queueConfig.ROUTING_KEY_SEND)
-
-  console.log('[RabbitMQ] Exchanges & queues setup complete')
 }
 
 function getChannel() {

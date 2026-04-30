@@ -9,6 +9,6 @@ Router.get('/status', (req, res) => {
 })
 Router.get('/email/list', emailController.emailList)
 
-Router.post('/email/insert_email', emailValidator.insertEmailValidator, emailController.insertEmail)
+Router.post('/email/insert', emailValidator.insertEmailValidator, emailController.insertEmail)
 
 module.exports = Router
