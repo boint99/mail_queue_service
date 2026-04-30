@@ -15,53 +15,38 @@ class emailModel {
       WHERE e.deleted_at IS NULL
       ORDER BY e.created_at ASC
     `
-    return new Promise((resolve, reject) => {
-      db.all(sql, [], (err, rows) => {
-        if (err) {
-          return reject(err)
-        }
-        resolve(rows)
-      })
-    })
+    const { rows } = await db.query(sql)
+    return rows
   }
 
   static async insertEmail({ id, email, name, status }) {
-
     const sql = `
       INSERT INTO emails (id, email, name, status)
-      VALUES (?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4)
       RETURNING *;
     `
     const values = [id, email, name, status || 'active']
 
-    return new Promise((resolve, reject) => {
-      const db = getDB()
-      db.get(sql, values, (err, row) => {
-        if (err) {
-          console.error('[DB] Error inserting email:', err.message)
-          return reject(err)
-        }
-        resolve(row)
-      })
-    })
+    const db = getDB()
+    try {
+      const { rows } = await db.query(sql, values)
+      return rows[0]
+    } catch (err) {
+      console.error('[DB] Error inserting email:', err.message)
+      throw err
+    }
   }
 
   static async findbyidEmail(id) {
     const db = getDB()
     const sql = `
-      SELECT e.id
+      SELECT e.id, e.deleted_at
       FROM emails as e
-      WHERE e.id = ?
+      WHERE e.id = $1
     `
     const values = [id]
-    return new Promise((resolve, reject) => {
-      db.get(sql, values, (err, row) => {
-        if (err) {
-          return reject(err)
-        }
-        resolve(row)
-      })
-    })
+    const { rows } = await db.query(sql, values)
+    return rows[0]
   }
 
   static async updateEmail(id, data) {
@@ -69,23 +54,18 @@ class emailModel {
 
     const sql = `
     UPDATE emails
-    SET name = IFNULL(?, name),
-        status = IFNULL(?, status),
-        email = IFNULL(?, email)
-    WHERE id = ?
+    SET name = COALESCE($1, name),
+        status = COALESCE($2, status),
+        email = COALESCE($3, email)
+    WHERE id = $4
   `
 
     const values = [data.name, data.status, data.email, id]
 
-    return new Promise((resolve, reject) => {
-      db.run(sql, values, function (err) {
-        if (err) return reject(err)
-
-        resolve({
-          changes: this.changes
-        })
-      })
-    })
+    const result = await db.query(sql, values)
+    return {
+      changes: result.rowCount
+    }
   }
 
   static async deleteEmail(id) {
@@ -94,18 +74,13 @@ class emailModel {
     const sql = `
     UPDATE emails
     SET deleted_at = CURRENT_TIMESTAMP
-    WHERE id = ? AND deleted_at IS NULL
+    WHERE id = $1 AND deleted_at IS NULL
   `
 
-    return new Promise((resolve, reject) => {
-      db.run(sql, [id], function (err) {
-        if (err) return reject(err)
-
-        resolve({
-          deleted: this.changes > 0
-        })
-      })
-    })
+    const result = await db.query(sql, [id])
+    return {
+      deleted: result.rowCount > 0
+    }
   }
 }
 

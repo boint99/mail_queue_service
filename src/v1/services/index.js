@@ -29,6 +29,10 @@ class emailService {
       throw new Error('Email not found')
     }
 
+    if (existing.deleted_at !== null) {
+      throw new Error('Email is not found')
+    }
+
     const updateData = {}
 
     if (data.name !== undefined) {
@@ -68,6 +72,10 @@ class emailService {
 
     if (!existing) {
       throw new Error('Email not found')
+    }
+
+    if (existing.deleted_at !== null) {
+      throw new Error('Email is not found')
     }
 
     return await emailModel.deleteEmail(id)

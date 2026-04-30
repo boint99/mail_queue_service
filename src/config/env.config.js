@@ -23,6 +23,13 @@ const envConfig = {
     return process.env.RABBITMQ_URL || `amqp://${user}:${pass}@${host}:${port}/${vhost}`
   },
 
+  // Postgres
+  POSTGRES_HOST: process.env.POSTGRES_HOST || 'localhost',
+  POSTGRES_PORT: parseInt(process.env.POSTGRES_PORT) || 5432,
+  POSTGRES_USER: process.env.POSTGRES_USER || 'postgres',
+  POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD || 'postgres',
+  POSTGRES_DB: process.env.POSTGRES_DB || 'database',
+
   // Redis
   REDIS_HOST: process.env.REDIS_HOST || 'localhost',
   REDIS_PORT: parseInt(process.env.REDIS_PORT) || 6379,
