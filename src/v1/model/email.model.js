@@ -45,6 +45,48 @@ class emailModel {
       })
     })
   }
+
+  static async findbyidEmail(id) {
+    const db = getDB()
+    const sql = `
+      SELECT e.id
+      FROM emails as e
+      WHERE e.id = ?
+    `
+    const values = [id]
+    return new Promise((resolve, reject) => {
+      db.get(sql, values, (err, row) => {
+        if (err) {
+          return reject(err)
+        }
+        resolve(row)
+      })
+    })
+  }
+
+  static async updateEmail(id, data) {
+    const db = getDB()
+
+    const sql = `
+    UPDATE emails
+    SET name = IFNULL(?, name),
+        status = IFNULL(?, status),
+        email = IFNULL(?, email)
+    WHERE id = ?
+  `
+
+    const values = [data.name, data.status, data.email, id]
+
+    return new Promise((resolve, reject) => {
+      db.run(sql, values, function (err) {
+        if (err) return reject(err)
+
+        resolve({
+          changes: this.changes
+        })
+      })
+    })
+  }
 }
 
 module.exports = emailModel

@@ -11,4 +11,6 @@ Router.get('/email/list', emailController.emailList)
 
 Router.post('/email/insert', emailValidator.insertEmailValidator, emailController.insertEmail)
 
+Router.put('/email/update/:id', emailController.updateEmail)
+
 module.exports = Router

@@ -28,6 +28,21 @@ class emailController {
     }
   }
 
+  static async updateEmail(req, res, next) {
+    try {
+      const { id } = req.params
+      const data = req.body
+      await emailService.updateEmail(id, data)
+      return res.status(200).json({
+        status: true,
+        message: 'OK',
+        data: []
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
 }
 
 module.exports = emailController
