@@ -4,8 +4,8 @@
   "main": "src/app.js",
   "license": "MIT",
   "scripts": {
-    "dev": "nodemon --watch src/app.js",
-    "worker": "nodemon --watch src/worker.js",
+    "dev": "nodemon src/app.js",
+    "worker": "nodemon src/worker.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

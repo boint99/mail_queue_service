@@ -35,6 +35,13 @@ mail_queue_service/
         └── mail.service.js     # Nodemailer SMTP sender
 ```
 
+## DATABASE SCHEMA
+
+┌────────────────────┐       1       N       ┌────────────────────┐       N       1       ┌────────────────────┐
+│      email         │ ───────────────────── │    email_sends     │ ───────────────────── │     mail_tasks     │
+│____________________│                       │____________________│                       │____________________│
+
+
 ## Khởi chạy
 
 ### 1. Cấu hình `.env`

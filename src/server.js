@@ -1,36 +1,47 @@
 const express = require('express')
 const { connectRabbitMQ } = require('./config/rabbitmq.config')
 const envConfig = require('./config/env.config')
-const initDB = require('./config/db.config')
+const { initDB } = require('./config/db.config')
+const Router = require('./v1/routes')
+
+const PORT = envConfig.API_PORT
+
 
 const app = express()
 app.use(express.json())
 
-const PORT = envConfig.API_PORT
-
 /**
  * Health check
  */
-app.get('/health', (req, res) => {
+app.get('/', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
+/**
+ * Initialize API routes
+ */
+app.use('/api/v1', Router)
+
 async function STARTSERVER() {
-  let db
+  console.log('>>> STARTSERVER called')
+
   try {
+    console.log('>>> Step 1: RabbitMQ')
     await connectRabbitMQ()
 
-    db = await initDB()
-    app.locals.db = db
+    console.log('>>> Step 2: DB')
+    await initDB()
 
+    console.log('>>> Step 3: Listen')
     app.listen(PORT, () => {
-      console.log(`Mail Queue API Server running on port ${PORT}`)
-      console.log(`Health: http://localhost:${PORT}/health`)
+      console.log('Server running on port', `http://localhost:${PORT}`)
     })
+
   } catch (err) {
-    console.error('[Server] Failed to start:', err.message)
+    console.error('[Server] Failed:', err.message)
     process.exit(1)
   }
 }
+
 
 module.exports = STARTSERVER

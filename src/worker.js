@@ -1,4 +1,4 @@
-const { connectRabbitMQ, getChannel } = require('./config/rabbitmq.config')
+const { connectRabbitMQ } = require('./config/rabbitmq.config')
 const redis = require('./config/redis.config')
 const queueConfig = require('./config/queue.config')
 const { sendMail } = require('./config/mail.config')
@@ -20,14 +20,14 @@ async function STARTWORKER() {
         try {
           message = JSON.parse(msg.content.toString())
         } catch (parseErr) {
-          console.error(`[Worker] ❌ Invalid message format, rejecting: ${parseErr.message}`)
+          // console.error(`[Worker] ❌ Invalid message format, rejecting: ${parseErr.message}`)
           channel.reject(msg, false)
           return
         }
 
         const { messageId, data, retryCount = 0 } = message
 
-        console.log(`[Worker] 📬 Processing: ${messageId} | To: ${data.to} | Retry: ${retryCount}/${queueConfig.MAX_RETRIES}`)
+        // console.log(`[Worker] 📬 Processing: ${messageId} | To: ${data.to} | Retry: ${retryCount}/${queueConfig.MAX_RETRIES}`)
 
         try {
           // Cập nhật trạng thái: đang xử lý
@@ -46,9 +46,9 @@ async function STARTWORKER() {
             'sentAt', new Date().toISOString()
           )
 
-          console.log(`[Worker] ✅ Sent successfully: ${messageId}`)
+          // console.log(`[Worker] ✅ Sent successfully: ${messageId}`)
         } catch (err) {
-          console.error(`[Worker] ❌ Failed to send ${messageId}:`, err.message)
+          // console.error(`[Worker] ❌ Failed to send ${messageId}:`, err.message)
 
           if (retryCount < queueConfig.MAX_RETRIES) {
             // Retry: ack message cũ, publish message mới với retryCount tăng
@@ -73,7 +73,7 @@ async function STARTWORKER() {
                   contentType: 'application/json'
                 }
               )
-              console.log(`[Worker] 🔄 Retrying ${messageId} (${retryCount + 1}/${queueConfig.MAX_RETRIES})`)
+              // console.log(`[Worker] 🔄 Retrying ${messageId} (${retryCount + 1}/${queueConfig.MAX_RETRIES})`)
             }, queueConfig.RETRY_DELAY_MS)
 
             // Cập nhật trạng thái
@@ -95,20 +95,20 @@ async function STARTWORKER() {
               'lastError', err.message
             )
 
-            console.log(`[Worker] 💀 Message ${messageId} moved to dead letter queue`)
+            // console.log(`[Worker] 💀 Message ${messageId} moved to dead letter queue`)
           }
         }
       })
     }
   } catch (err) {
-    console.error('[Worker] ❌ Failed to start:', err.message)
+    // console.error('[Worker] ❌ Failed to start:', err.message)
     process.exit(1)
   }
 }
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\n[Worker] Shutting down gracefully...')
+  // console.log('\n[Worker] Shutting down gracefully...')
   const { closeRabbitMQ } = require('./config/rabbitmq.config')
   await closeRabbitMQ()
   await redis.quit()
@@ -116,7 +116,7 @@ process.on('SIGINT', async () => {
 })
 
 process.on('SIGTERM', async () => {
-  console.log('\n[Worker] Received SIGTERM, shutting down...')
+  // console.log('\n[Worker] Received SIGTERM, shutting down...')
   const { closeRabbitMQ } = require('./config/rabbitmq.config')
   await closeRabbitMQ()
   await redis.quit()

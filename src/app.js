@@ -5,7 +5,7 @@ const app = async () => {
   await STARTWORKER()
   console.log('\nWorker is running ...\n')
 
-  await STARTSERVER()
+  STARTSERVER()
   console.log('\nAPI is running ...\n')
 }
 
