@@ -1,19 +1,19 @@
-const sqlite3 = require("sqlite3").verbose();
-const path = require("path");
+const sqlite3 = require('sqlite3').verbose()
+const path = require('path')
 
-const dbPath = path.resolve(__dirname, "../../db.sqlite");
+const dbPath = path.resolve(__dirname, '../../db.sqlite')
 
 function initDB() {
-    return new Promise((resolve, reject) => {
-        const db = new sqlite3.Database(dbPath, (err) => {
-            if (err) {
-                console.error("[DB] is failed to connect:", err.message);
-                return reject(err);
-            }
+  return new Promise((resolve, reject) => {
+    const db = new sqlite3.Database(dbPath, (err) => {
+      if (err) {
+        console.error('[DB] is failed to connect:', err.message)
+        return reject(err)
+      }
 
-            console.log("[DB] Connected successfully");
+      console.log('[DB] Connected successfully')
 
-            db.run(`
+      db.run(`
         CREATE TABLE IF NOT EXISTS emails (
           id TEXT PRIMARY KEY,
           to_email TEXT NOT NULL,
@@ -25,16 +25,16 @@ function initDB() {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `, (tableErr) => {
-                if (tableErr) {
-                    console.error("[DB] fail to create table emails:", tableErr.message);
-                    return reject(tableErr);
-                }
+        if (tableErr) {
+          console.error('[DB] fail to create table emails:', tableErr.message)
+          return reject(tableErr)
+        }
 
-                console.log("[DB] emails table is ready");
-                resolve(db);
-            });
-        });
-    });
+        console.log('[DB] emails table is ready')
+        resolve(db)
+      })
+    })
+  })
 }
 
-module.exports = initDB;
+module.exports = initDB
