@@ -56,8 +56,21 @@ class emailService {
       throw new Error('No data to update')
     }
 
-    console.log(updateData)
     return await emailModel.updateEmail(id, updateData)
+  }
+
+  static async deleteEmail(id) {
+    if (!id) {
+      throw new Error('Invalid input')
+    }
+
+    const existing = await emailModel.findbyidEmail(id)
+
+    if (!existing) {
+      throw new Error('Email not found')
+    }
+
+    return await emailModel.deleteEmail(id)
   }
 }
 

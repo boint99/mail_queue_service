@@ -43,6 +43,20 @@ class emailController {
     }
   }
 
+  static async deleteEmail(req, res, next) {
+    try {
+      const { id } = req.params
+      await emailService.deleteEmail(id)
+      return res.status(200).json({
+        status: true,
+        message: 'OK',
+        data: []
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
 }
 
 module.exports = emailController

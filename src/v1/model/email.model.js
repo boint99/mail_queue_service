@@ -87,6 +87,26 @@ class emailModel {
       })
     })
   }
+
+  static async deleteEmail(id) {
+    const db = getDB()
+
+    const sql = `
+    UPDATE emails
+    SET deleted_at = CURRENT_TIMESTAMP
+    WHERE id = ? AND deleted_at IS NULL
+  `
+
+    return new Promise((resolve, reject) => {
+      db.run(sql, [id], function (err) {
+        if (err) return reject(err)
+
+        resolve({
+          deleted: this.changes > 0
+        })
+      })
+    })
+  }
 }
 
 module.exports = emailModel
