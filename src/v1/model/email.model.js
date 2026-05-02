@@ -1,87 +1,32 @@
-const { getDB } = require('../../config/db.config')
+const MODEL = require('../model')
 
-class emailModel {
-  constructor(email, name, status) {
-    this.email = email
-    this.name = name
-    this.status = status || 'active'
+class EmailModel extends MODEL {
+  constructor() {
+    super('emails')
+  }
+  async emailList() {
+    return await this.FINDALL()
   }
 
-  static async emailList() {
-    const db = getDB()
-    const sql = `
-      SELECT e.id, e.email, e.name, e.status, e.created_at
-      FROM emails as e
-      WHERE e.deleted_at IS NULL
-      ORDER BY e.created_at ASC
-    `
-    const { rows } = await db.query(sql)
-    return rows
+  async findById(id) {
+    return await this.FINDBYID(id)
   }
 
-  static async insertEmail({ id, email, name, status }) {
-    const sql = `
-      INSERT INTO emails (id, email, name, status)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *;
-    `
-    const values = [id, email, name, status || 'active']
-
-    const db = getDB()
-    try {
-      const { rows } = await db.query(sql, values)
-      return rows[0]
-    } catch (err) {
-      console.error('[DB] Error inserting email:', err.message)
-      throw err
-    }
+  async findbyUnique(column, value) {
+    return await this.FINDBYUNIQUE(column, value)
   }
 
-  static async findbyidEmail(id) {
-    const db = getDB()
-    const sql = `
-      SELECT e.id, e.deleted_at
-      FROM emails as e
-      WHERE e.id = $1
-    `
-    const values = [id]
-    const { rows } = await db.query(sql, values)
-    return rows[0]
+  async insertEmail(data) {
+    return await this.CREATE(data)
   }
 
-  static async updateEmail(id, data) {
-    const db = getDB()
-
-    const sql = `
-    UPDATE emails
-    SET name = COALESCE($1, name),
-        status = COALESCE($2, status),
-        email = COALESCE($3, email)
-    WHERE id = $4
-  `
-
-    const values = [data.name, data.status, data.email, id]
-
-    const result = await db.query(sql, values)
-    return {
-      changes: result.rowCount
-    }
+  async updateEmail(id, data) {
+    return await this.UPDATE(id, data)
   }
 
-  static async deleteEmail(id) {
-    const db = getDB()
-
-    const sql = `
-    UPDATE emails
-    SET deleted_at = CURRENT_TIMESTAMP
-    WHERE id = $1 AND deleted_at IS NULL
-  `
-
-    const result = await db.query(sql, [id])
-    return {
-      deleted: result.rowCount > 0
-    }
+  async deleteEmail(id) {
+    return await this.DELETE(id)
   }
 }
 
-module.exports = emailModel
+module.exports = new EmailModel()

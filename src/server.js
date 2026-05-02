@@ -26,11 +26,11 @@ async function STARTSERVER() {
   console.log('>>> STARTSERVER called')
 
   try {
-    console.log('>>> Step 1: RabbitMQ')
-    await connectRabbitMQ()
-
-    console.log('>>> Step 2: DB')
+    console.log('>>> Step 1: DB')
     await initDB()
+
+    console.log('>>> Step 2: RabbitMQ')
+    await connectRabbitMQ()
 
     console.log('>>> Step 3: Listen')
     app.listen(PORT, () => {
