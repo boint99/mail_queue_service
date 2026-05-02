@@ -41,6 +41,29 @@ mail_queue_service/
 │      email         │ ───────────────────── │    email_sends     │ ───────────────────── │     mail_tasks     │
 │____________________│                       │____________________│                       │____________________│
 
+[ Client / Web ]
+       │
+       │ (1) Gửi yêu cầu (Kèm Idempotency-Key)
+       ▼
+[ API Server :3000 ] ◄──(2) Kiểm tra Spam / Trùng lặp──► [ Redis :6379 ]
+       │                                                    (Chốt chặn)
+       ├──► (3) Tạo task mới (status: 'pending') ─────┐
+       │                                              ▼
+       │ (4) Publish Task (gửi message)      [ PostgreSQL :5432 ]
+       ▼                                     (Lưu trữ vĩnh viễn)
+┌──────────────┐                                      ▲
+│   RabbitMQ   │      (Quá số lần Retry)              │
+│ (Main Queue) │ ──────────────────────┐              │
+└──────────────┘                       ▼              │
+       │                       ┌──────────────┐       │ (7) Update trạng thái
+       │ (5) Consume           │  Dead Letter │       │     ('sent' / 'failed')
+       ▼                       │  Queue (DLQ) │       │
+[ Worker (Node) ]              └──────────────┘       │
+       │                                              │
+       │ (6) Send Mail                                │
+       ▼                                              │
+[ SMTP Server ] ──────────────────────────────────────┘
+
 
 ## Khởi chạy
 

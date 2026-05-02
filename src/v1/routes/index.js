@@ -1,18 +1,9 @@
 const express = require('express')
-const emailController = require('../controller/index.js')
-const emailValidator = require('../validator/email.validator.js')
 
 const Router = express.Router()
 
-Router.get('/status', (req, res) => {
-  res.send('OK')
-})
-Router.get('/email/list', emailController.emailList)
+Router.use('/email', require('./email.routes.js'))
 
-Router.post('/email/insert', emailValidator.insertEmailValidator, emailController.insertEmail)
-
-Router.put('/email/update/:id', emailValidator.updateEmailValidator, emailController.updateEmail)
-
-Router.delete('/email/delete/:id', emailValidator.deleteEmailValidator, emailController.deleteEmail)
+Router.use('/email_tasks', require('./email_task.routes.js'))
 
 module.exports = Router

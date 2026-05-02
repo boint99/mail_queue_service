@@ -22,55 +22,57 @@ function initDB() {
       console.log('[DB] Connected successfully')
 
       client.query(`
-             DO $$
-              BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status_email_enum') THEN
-                  CREATE TYPE status_email_enum AS ENUM ('active', 'disabled');
-                END IF;
+            DO $$
+            BEGIN
+              -- ENUM cho status email, task,
+              IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status_enum') THEN
+                CREATE TYPE status_enum AS ENUM ('active', 'disabled');
+              END IF;
 
-                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status_send_enum') THEN
-                  CREATE TYPE status_send_enum AS ENUM ('pending', 'sent', 'failed');
-                END IF;
+              -- ENUM cho send
+              IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status_send_enum') THEN
+                CREATE TYPE status_send_enum AS ENUM ('pending', 'sent', 'failed');
+              END IF;
+            END$$;
 
-                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status_task_enum') THEN
-                  CREATE TYPE status_task_enum AS ENUM ('pending', 'processing', 'completed', 'failed');
-                END IF;
-              END$$;
+            CREATE TABLE IF NOT EXISTS emails (
+              id TEXT PRIMARY KEY,
+              email TEXT NOT NULL UNIQUE,
+              name TEXT,
+              status status_enum NOT NULL DEFAULT 'active',
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              deleted_at TIMESTAMP DEFAULT NULL
+            );
 
-              CREATE TABLE IF NOT EXISTS emails (
-                id TEXT PRIMARY KEY,
-                email TEXT NOT NULL UNIQUE,
-                name TEXT,
-                status status_email_enum DEFAULT 'active',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                deleted_at TIMESTAMP DEFAULT NULL
-              );
+            CREATE TABLE IF NOT EXISTS email_tasks (
+              id TEXT PRIMARY KEY,
+              campaign_name TEXT NOT NULL,
+              sender_email TEXT NOT NULL,
+              subject TEXT NOT NULL,
+              html_content TEXT,
+              status status_enum NOT NULL DEFAULT 'active',
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              deleted_at TIMESTAMP DEFAULT NULL
+            );
 
-              CREATE TABLE IF NOT EXISTS email_tasks (
-                id TEXT PRIMARY KEY,
-                campaign_name TEXT NOT NULL,
-                sender_email TEXT NOT NULL,
-                status status_task_enum NOT NULL DEFAULT 'pending',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-              );
+            CREATE TABLE IF NOT EXISTS email_sends (
+              id TEXT PRIMARY KEY,
+              task_id TEXT NOT NULL,
+              email_id TEXT,
+              to_email TEXT NOT NULL,
+              status status_send_enum NOT NULL DEFAULT 'pending',
+              retry_count INTEGER DEFAULT 0,
+              last_error TEXT,
+              sent_at TIMESTAMP,
+              failed_at TIMESTAMP,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (task_id) REFERENCES email_tasks(id) ON DELETE CASCADE,
+              FOREIGN KEY (email_id) REFERENCES emails(id) ON DELETE SET NULL
+            );
 
-              CREATE TABLE IF NOT EXISTS email_sends (
-                id TEXT PRIMARY KEY,
-                task_id TEXT NOT NULL,
-                contact_id TEXT,
-                to_email TEXT NOT NULL,
-                status status_send_enum NOT NULL DEFAULT 'pending',
-                retry_count INTEGER DEFAULT 0,
-                last_error TEXT,
-                sent_at TIMESTAMP,
-                failed_at TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (task_id) REFERENCES email_tasks(id) ON DELETE CASCADE,
-                FOREIGN KEY (contact_id) REFERENCES emails(id) ON DELETE SET NULL
-              );
 
-              CREATE INDEX IF NOT EXISTS idx_email_sends_task_id ON email_sends(task_id);
-              CREATE INDEX IF NOT EXISTS idx_email_sends_status ON email_sends(status);
+            CREATE INDEX IF NOT EXISTS idx_email_sends_status ON email_sends(status);
+            CREATE INDEX IF NOT EXISTS idx_email_sends_task_id ON email_sends(task_id);
       `, (tableErr) => {
         release()
         if (tableErr) {
