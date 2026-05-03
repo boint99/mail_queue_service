@@ -24,14 +24,19 @@ function initDB() {
       client.query(`
             DO $$
             BEGIN
-              -- ENUM cho status email, task,
+              -- ENUM for status
               IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status_enum') THEN
                 CREATE TYPE status_enum AS ENUM ('active', 'disabled');
               END IF;
 
-              -- ENUM cho send
+              -- ENUM for send status
               IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status_send_enum') THEN
-                CREATE TYPE status_send_enum AS ENUM ('pending', 'sent', 'failed');
+                CREATE TYPE status_send_enum AS ENUM ('pending', 'sent', 'failed','processing');
+              END IF;
+
+              -- ENUM for channel
+              IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'channel_enum') THEN
+                CREATE TYPE channel_enum AS ENUM ('to', 'cc', 'bcc');
               END IF;
             END$$;
 
@@ -58,19 +63,19 @@ function initDB() {
             CREATE TABLE IF NOT EXISTS email_sends (
               id TEXT PRIMARY KEY,
               task_id TEXT NOT NULL,
-              email_id TEXT,
-              to_email TEXT NOT NULL,
+              email_id TEXT DEFAULT NULL,
+              recipient_email TEXT NOT NULL,
+              channel channel_enum DEFAULT 'to',
               status status_send_enum NOT NULL DEFAULT 'pending',
               retry_count INTEGER DEFAULT 0,
               last_error TEXT,
               sent_at TIMESTAMP,
               failed_at TIMESTAMP,
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
               FOREIGN KEY (task_id) REFERENCES email_tasks(id) ON DELETE CASCADE,
               FOREIGN KEY (email_id) REFERENCES emails(id) ON DELETE SET NULL
             );
-
-
             CREATE INDEX IF NOT EXISTS idx_email_sends_status ON email_sends(status);
             CREATE INDEX IF NOT EXISTS idx_email_sends_task_id ON email_sends(task_id);
       `, (tableErr) => {

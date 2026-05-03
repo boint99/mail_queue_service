@@ -1,6 +1,6 @@
 const amqp = require('amqplib')
 const envConfig = require('./env.config')
-const queueConfig = require('./queue.config')
+const QUEUE_UTILS = require('../utils/queue.utils')
 
 let connection = null
 let channel = null
@@ -37,25 +37,25 @@ async function connectRabbitMQ(retries = 5, delay = 5000) {
 
 async function setupQueues(ch) {
   // create exchange
-  await ch.assertExchange(queueConfig.EXCHANGE_NAME, queueConfig.EXCHANGE_TYPE, {
+  await ch.assertExchange(QUEUE_UTILS.EXCHANGE_NAME, QUEUE_UTILS.EXCHANGE_TYPE, {
     durable: true
   })
 
   // create dead letter queue
-  await ch.assertQueue(queueConfig.QUEUE_DEAD_LETTER, {
+  await ch.assertQueue(QUEUE_UTILS.QUEUE_DEAD_LETTER, {
     durable: true
   })
-  await ch.bindQueue(queueConfig.QUEUE_DEAD_LETTER, queueConfig.EXCHANGE_NAME, queueConfig.ROUTING_KEY_DEAD)
+  await ch.bindQueue(QUEUE_UTILS.QUEUE_DEAD_LETTER, QUEUE_UTILS.EXCHANGE_NAME, QUEUE_UTILS.ROUTING_KEY_DEAD)
 
   // create queue main
-  await ch.assertQueue(queueConfig.QUEUE_SEND_MAIL, {
+  await ch.assertQueue(QUEUE_UTILS.QUEUE_SEND_MAIL, {
     durable: true,
     arguments: {
-      'x-dead-letter-exchange': queueConfig.EXCHANGE_NAME,
-      'x-dead-letter-routing-key': queueConfig.ROUTING_KEY_DEAD
+      'x-dead-letter-exchange': QUEUE_UTILS.EXCHANGE_NAME,
+      'x-dead-letter-routing-key': QUEUE_UTILS.ROUTING_KEY_DEAD
     }
   })
-  await ch.bindQueue(queueConfig.QUEUE_SEND_MAIL, queueConfig.EXCHANGE_NAME, queueConfig.ROUTING_KEY_SEND)
+  await ch.bindQueue(QUEUE_UTILS.QUEUE_SEND_MAIL, QUEUE_UTILS.EXCHANGE_NAME, QUEUE_UTILS.ROUTING_KEY_SEND)
 }
 
 function getChannel() {

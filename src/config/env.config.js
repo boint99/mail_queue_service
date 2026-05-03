@@ -1,4 +1,5 @@
-require('dotenv').config()
+const path = require('path')
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') })
 
 const envConfig = {
   NODE_ENV: process.env.NODE_ENV || 'development',
@@ -26,8 +27,8 @@ const envConfig = {
   // Postgres
   POSTGRES_HOST: process.env.POSTGRES_HOST || 'localhost',
   POSTGRES_PORT: parseInt(process.env.POSTGRES_PORT) || 5432,
-  POSTGRES_USER: process.env.POSTGRES_USER || 'postgres',
-  POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD || 'postgres',
+  POSTGRES_USER: process.env.POSTGRES_USER || '',
+  POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD || '',
   POSTGRES_DB: process.env.POSTGRES_DB || 'database',
 
   // Redis
@@ -40,7 +41,11 @@ const envConfig = {
   SMTP_PORT: parseInt(process.env.SMTP_PORT) || 587,
   SMTP_USER: process.env.SMTP_USER || '',
   SMTP_PASS: process.env.SMTP_PASS || '',
-  SMTP_FROM: process.env.SMTP_FROM || ''
+  SMTP_FROM: process.env.SMTP_FROM || '',
+
+  // Postfix
+  POSTFIX_HOST: process.env.POSTFIX_HOST || '',
+  POSTFIX_PORT_SEND: parseInt(process.env.POSTFIX_PORT_SEND) || 25
 }
 
 module.exports = envConfig

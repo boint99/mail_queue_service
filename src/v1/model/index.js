@@ -79,6 +79,34 @@ class MODEL {
     const { rows } = await this.db.query(query, [value])
     return rows[0]
   }
+
+  async CREATE_MANY(dataArray) {
+    if (!Array.isArray(dataArray) || dataArray.length === 0) {
+      throw new Error('dataArray must be a non-empty array')
+    }
+
+    const keys = Object.keys(dataArray[0])
+
+    const columns = keys.join(', ')
+
+    const values = []
+    const placeholders = dataArray.map((row, rowIndex) => {
+      const rowPlaceholders = keys.map((_, colIndex) => {
+        values.push(row[keys[colIndex]])
+        return `$${rowIndex * keys.length + colIndex + 1}`
+      })
+      return `(${rowPlaceholders.join(', ')})`
+    })
+
+    const query = `
+    INSERT INTO ${this.tableName} (${columns})
+    VALUES ${placeholders.join(', ')}
+    RETURNING *
+  `
+
+    const { rows } = await this.db.query(query, values)
+    return rows
+  }
 }
 
 module.exports = MODEL

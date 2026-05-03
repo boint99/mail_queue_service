@@ -1,126 +1,86 @@
 const { connectRabbitMQ } = require('./config/rabbitmq.config')
-const redis = require('./config/redis.config')
-const queueConfig = require('./config/queue.config')
+const QUEUE_UTILS = require('./utils/queue.utils')
 const { sendMail } = require('./config/mail.config')
+const { getDB, initDB } = require('./config/db.config')
 
-/**
- * Worker - Consume messages từ queue và gửi email
- */
 async function STARTWORKER() {
   try {
-    const channel = await connectRabbitMQ()
+    await initDB()
+    const db = getDB()
 
-    if (channel) {
-      channel.prefetch(queueConfig.PREFETCH_COUNT)
+    const ch = await connectRabbitMQ()
+    const QUEUE_SEND_MAIL = QUEUE_UTILS.QUEUE_SEND_MAIL
+    const PREFETCH_COUNT = QUEUE_UTILS.PREFETCH_COUNT
 
-      channel.consume(queueConfig.QUEUE_SEND_MAIL, async (msg) => {
-        if (!msg) return
+    console.log('Worker started with queue:', QUEUE_SEND_MAIL)
 
-        let message
-        try {
-          message = JSON.parse(msg.content.toString())
-        } catch (parseErr) {
-          // console.error(`[Worker] ❌ Invalid message format, rejecting: ${parseErr.message}`)
-          channel.reject(msg, false)
-          return
+    ch.prefetch(PREFETCH_COUNT)
+
+    ch.consume(QUEUE_SEND_MAIL, async (msg) => {
+      if (!msg) return
+
+      let message
+      try {
+        message = JSON.parse(msg.content.toString()).record
+        console.log('🚀 ~ Đang xử lý message:', message)
+
+        const mailOptions = {
+          from: message.email_send,
+          to: message.channel === 'to' ? message.recipient_email : undefined,
+          cc: message.channel === 'cc' ? message.recipient_email : undefined,
+          bcc: message.channel === 'bcc' ? message.recipient_email : undefined,
+          subject: message.subject,
+          html: message.html_content
         }
+        console.log('🚀 ~ Đang xử lý message:', mailOptions)
+        await sendMail(mailOptions)
+        console.log('[📧] Gửi SMTP xong.')
 
-        const { messageId, data, retryCount = 0 } = message
+        await db.query(`
+            UPDATE email_sends
+            SET status = 'processing', sent_at = $2
+            WHERE id = $1 AND status = 'pending'
+            RETURNING id;
+          `, [message.id])
 
-        // console.log(`[Worker] 📬 Processing: ${messageId} | To: ${data.to} | Retry: ${retryCount}/${queueConfig.MAX_RETRIES}`)
+        await db.query('UPDATE email_sends SET status = \'sent\', sent_at = $2 WHERE id = $1', [message.id, new Date()])
+        console.log(`[✅] Đã cập nhật thành công DB cho: ${message.recipient_email}`)
 
-        try {
-          // Cập nhật trạng thái: đang xử lý
-          await redis.hset(`mail:${messageId}`, 'status', 'processing')
+        ch.ack(msg)
+      } catch ( error) {
+        console.error(`[❌] Lỗi khi xử lý email ${message?.recipient_email}:`, error.message)
+        // await db.query(`
+        //     UPDATE email_sends
+        //     SET status = 'failed'
+        //     WHERE id = $1
+        //   `, [message.id])
 
-          // Gửi email
-          await sendMail(data)
-
-          // Thành công -> ack message
-          channel.ack(msg)
-
-          // Cập nhật trạng thái: thành công
-          await redis.hset(
-            `mail:${messageId}`,
-            'status', 'sent',
-            'sentAt', new Date().toISOString()
-          )
-
-          // console.log(`[Worker] ✅ Sent successfully: ${messageId}`)
-        } catch (err) {
-          // console.error(`[Worker] ❌ Failed to send ${messageId}:`, err.message)
-
-          if (retryCount < queueConfig.MAX_RETRIES) {
-            // Retry: ack message cũ, publish message mới với retryCount tăng
-            channel.ack(msg)
-
-            const retryMessage = {
-              ...message,
-              retryCount: retryCount + 1,
-              lastError: err.message,
-              lastRetryAt: new Date().toISOString()
-            }
-
-            // Delay trước khi retry
-            setTimeout(() => {
-              channel.publish(
-                queueConfig.EXCHANGE_NAME,
-                queueConfig.ROUTING_KEY_SEND,
-                Buffer.from(JSON.stringify(retryMessage)),
-                {
-                  persistent: true,
-                  messageId,
-                  contentType: 'application/json'
-                }
-              )
-              // console.log(`[Worker] 🔄 Retrying ${messageId} (${retryCount + 1}/${queueConfig.MAX_RETRIES})`)
-            }, queueConfig.RETRY_DELAY_MS)
-
-            // Cập nhật trạng thái
-            await redis.hset(
-              `mail:${messageId}`,
-              'status', 'retrying',
-              'retryCount', String(retryCount + 1),
-              'lastError', err.message
-            )
-          } else {
-            // Hết retry -> reject, gửi vào dead letter queue
-            channel.reject(msg, false)
-
-            // Cập nhật trạng thái: thất bại
-            await redis.hset(
-              `mail:${messageId}`,
-              'status', 'failed',
-              'failedAt', new Date().toISOString(),
-              'lastError', err.message
-            )
-
-            // console.log(`[Worker] 💀 Message ${messageId} moved to dead letter queue`)
-          }
-        }
-      })
-    }
+        ch.ack(msg)
+      }
+    })
   } catch (err) {
-    // console.error('[Worker] ❌ Failed to start:', err.message)
+    // MỞ LẠI LOG LỖI ĐỂ BIẾT TẠI SAO SERVER SẬP
+    console.error('[Worker] ❌ Failed to start:', err)
     process.exit(1)
   }
 }
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  // console.log('\n[Worker] Shutting down gracefully...')
+  console.log('\n[Worker] Shutting down gracefully...')
   const { closeRabbitMQ } = require('./config/rabbitmq.config')
   await closeRabbitMQ()
-  await redis.quit()
   process.exit(0)
 })
 
 process.on('SIGTERM', async () => {
-  // console.log('\n[Worker] Received SIGTERM, shutting down...')
+  console.log('\n[Worker] Received SIGTERM, shutting down...')
   const { closeRabbitMQ } = require('./config/rabbitmq.config')
   await closeRabbitMQ()
-  await redis.quit()
   process.exit(0)
 })
+
+
+STARTWORKER()
 
 module.exports = STARTWORKER
