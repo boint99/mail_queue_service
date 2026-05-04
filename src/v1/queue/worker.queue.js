@@ -1,18 +1,15 @@
-const { connectRabbitMQ } = require('./config/rabbitmq.config')
-const QUEUE_UTILS = require('./utils/queue.utils')
-const { sendMail } = require('./config/mail.config')
-const { getDB, initDB } = require('./config/db.config')
+const { getChannel } = require('../../config/rabbitmq.config')
+const QUEUE_UTILS = require('../../utils/queue.utils')
+const { sendMail } = require('../../config/mail.config')
+const { getDB } = require('../../config/db.config')
 
-async function STARTWORKER() {
+async function workerQueue() {
   try {
-    await initDB()
+    const ch = await getChannel()
     const db = getDB()
 
-    const ch = await connectRabbitMQ()
     const QUEUE_SEND_MAIL = QUEUE_UTILS.QUEUE_SEND_MAIL
     const PREFETCH_COUNT = QUEUE_UTILS.PREFETCH_COUNT
-
-    console.log('Worker started with queue:', QUEUE_SEND_MAIL)
 
     ch.prefetch(PREFETCH_COUNT)
 
@@ -59,28 +56,9 @@ async function STARTWORKER() {
       }
     })
   } catch (err) {
-    // MỞ LẠI LOG LỖI ĐỂ BIẾT TẠI SAO SERVER SẬP
     console.error('[Worker] ❌ Failed to start:', err)
     process.exit(1)
   }
 }
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\n[Worker] Shutting down gracefully...')
-  const { closeRabbitMQ } = require('./config/rabbitmq.config')
-  await closeRabbitMQ()
-  process.exit(0)
-})
-
-process.on('SIGTERM', async () => {
-  console.log('\n[Worker] Received SIGTERM, shutting down...')
-  const { closeRabbitMQ } = require('./config/rabbitmq.config')
-  await closeRabbitMQ()
-  process.exit(0)
-})
-
-
-STARTWORKER()
-
-module.exports = STARTWORKER
+module.exports = workerQueue

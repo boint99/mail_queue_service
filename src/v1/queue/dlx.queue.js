@@ -1,7 +1,7 @@
 const { getChannel } = require('../../config/rabbitmq.config')
 const QUEUE_UTILS = require('../../utils/queue.utils')
 
-class DeadLetterQueue {
+class dlxQueue {
   static async initDLQ() {
     const ch = getChannel()
 
@@ -23,4 +23,4 @@ class DeadLetterQueue {
   }
 }
 
-module.exports = DeadLetterQueue
+module.exports = dlxQueue

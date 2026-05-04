@@ -1,7 +1,7 @@
 const emailTaskModel = require('../model/email.task.model')
 const { v7 } = require('uuid')
 const emailSendModel = require('../model/email_send.model')
-const Producer = require('../rabbitQueue/producer')
+const Producer = require('../rabbitQueue/producer.rabbit')
 
 class emailSendService {
 

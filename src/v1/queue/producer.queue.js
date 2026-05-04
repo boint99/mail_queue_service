@@ -1,7 +1,7 @@
 const { getChannel } = require('../../config/rabbitmq.config')
 const QUEUE_UTILS = require('../../utils/queue.utils')
 
-class Producer {
+class producerQueue {
   static async sendEmailsByTaskId(records) {
     const ch = await getChannel()
 
@@ -29,4 +29,4 @@ class Producer {
   }
 }
 
-module.exports = Producer
+module.exports = producerQueue

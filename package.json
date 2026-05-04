@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "nodemon src/app.js",
-    "worker": "nodemon src/worker.js",
+    "worker": "nodemon src/runworker.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

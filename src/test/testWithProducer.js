@@ -1,5 +1,5 @@
 const { initDB, getDB } = require('../config/db.config')
-const Producer = require('../v1/rabbitQueue/producer')
+const producerQueue = require('../v1/queue/producer.queue')
 const { connectRabbitMQ } = require('../config/rabbitmq.config')
 
 
@@ -26,7 +26,7 @@ const testProducers = async () => {
       subject: item.subject,
       html_content: item.html_content
     }))
-    await Producer.sendEmailsByTaskId(record)
+    await producerQueue.sendEmailsByTaskId(record)
 
     setTimeout(() => {
       console.log('✅ Dữ liệu đã an toàn trong Queue. Tắt tiến trình!')
